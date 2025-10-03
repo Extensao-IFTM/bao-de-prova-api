@@ -1,0 +1,6 @@
+@BaoProvaAPI_HostAddress = http://localhost:5273
+
+GET {{BaoProvaAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
