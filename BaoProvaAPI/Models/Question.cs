@@ -1,4 +1,6 @@
-﻿namespace BaoProvaAPI.Models
+﻿using System.Runtime.InteropServices.Marshalling;
+
+namespace BaoProvaAPI.Models
 {
     public class Question
     {
@@ -6,6 +8,7 @@
         public required string Statement { get; set; }
         public string[] Alternatives { get; set; } = [];
         public int CorrectAlternative { get; set; }
+        public required string Explanation {get; set; }
         public string? Category { get; set; }
         public int Year { get; set; }
     }
