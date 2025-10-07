@@ -1,0 +1,23 @@
+[
+  {
+    "UserId": 1923,
+    "QuestionId": 1,
+    "SelectedAlternative": 1,
+    "IsCorrect": true,
+    "Timestamp": "0001-01-01T00:00:00"
+  },
+  {
+    "UserId": 1923,
+    "QuestionId": 1,
+    "SelectedAlternative": 1,
+    "IsCorrect": true,
+    "Timestamp": "0001-01-01T00:00:00"
+  },
+  {
+    "UserId": 1923,
+    "QuestionId": 1,
+    "SelectedAlternative": 2,
+    "IsCorrect": false,
+    "Timestamp": "0001-01-01T00:00:00"
+  }
+]
