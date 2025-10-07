@@ -8,26 +8,56 @@ namespace BaoProvaAPI.Controllers
     [Route("api/[controller]")]
     public class UserDataController : ControllerBase
     {
+        private const string USERDATAFILEPATH = "Data/userdata.json";
+        private const string USERSFILEPATH = "Data/users.json";
+
         [HttpPost]
         public IActionResult SaveUserData([FromBody] UserData userData)
         {
-            var filePath = "Data/userdata.json";
-            List<UserData> userDataList = new();
+            List<UserData> userDataList = LoadUserData();
 
-            if (System.IO.File.Exists(filePath))
+            // Adiciona timestamp se não fornecido
+            if (userData.Timestamp == default)
             {
-                var existingJson = System.IO.File.ReadAllText(filePath);
-                if (!string.IsNullOrWhiteSpace(existingJson))
-                {
-                    userDataList = JsonSerializer.Deserialize<List<UserData>>(existingJson) ?? new List<UserData>();
-                }
+                userData.Timestamp = DateTime.Now;
             }
 
             userDataList.Add(userData);
-            var updatedJson = JsonSerializer.Serialize(userDataList, new JsonSerializerOptions { WriteIndented = true });
-            System.IO.File.WriteAllText(filePath, updatedJson);
+            SaveUserDataToFile(userDataList);
 
             return Ok(new { message = "Dados do usuário salvos com sucesso." });
+        }
+
+        private List<UserData> LoadUserData()
+        {
+            if (!System.IO.File.Exists(USERDATAFILEPATH))
+            {
+                return new List<UserData>();
+            }
+
+            string json = System.IO.File.ReadAllText(USERDATAFILEPATH);
+
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return new List<UserData>();
+            }
+
+            return JsonSerializer.Deserialize<List<UserData>>(json) ?? new List<UserData>();
+        }
+
+        private void SaveUserDataToFile(List<UserData> userDataList)
+        {
+            string json = JsonSerializer.Serialize(userDataList, new JsonSerializerOptions { WriteIndented = true });
+
+            // Cria o diretório se não existir
+            string? directory = Path.GetDirectoryName(USERDATAFILEPATH);
+            
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            System.IO.File.WriteAllText(USERDATAFILEPATH, json);
         }
     }
 }
