@@ -28,6 +28,39 @@ namespace BaoProvaAPI.Controllers
             return Ok(new { message = "Dados do usuário salvos com sucesso." });
         }
 
+        [HttpPost("user")]
+        public IActionResult CreateUser([FromBody] User user)
+        {
+            List<User> users = LoadUsers();
+
+            // Verifica se já existe um usuário com o mesmo email
+            if (users.Any(u => u.Email.Equals(user.Email, StringComparison.OrdinalIgnoreCase)))
+            {
+                return BadRequest("Já existe um usuário com este email.");
+            }
+
+            // Define um novo ID
+            user.Id = users.Any() ? users.Max(u => u.Id) + 1 : 1;
+
+            users.Add(user);
+            SaveUsersToFile(users);
+
+            return Ok(new { message = "Usuário criado com sucesso.", userId = user.Id });
+        }
+
+
+        private List<User> LoadUsers()
+        {
+            if (!System.IO.File.Exists(USERSFILEPATH))
+                return new List<User>();
+
+            var json = System.IO.File.ReadAllText(USERSFILEPATH);
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<User>();
+
+            return JsonSerializer.Deserialize<List<User>>(json) ?? new List<User>();
+        }
+
         private List<UserData> LoadUserData()
         {
             if (!System.IO.File.Exists(USERDATAFILEPATH))
@@ -58,6 +91,20 @@ namespace BaoProvaAPI.Controllers
             }
 
             System.IO.File.WriteAllText(USERDATAFILEPATH, json);
+        }
+
+        private void SaveUsersToFile(List<User> users)
+        {
+            string json = JsonSerializer.Serialize(users, new JsonSerializerOptions { WriteIndented = true });
+
+            // Cria o diretório se não existir
+            string? directory = Path.GetDirectoryName(USERSFILEPATH);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            System.IO.File.WriteAllText(USERSFILEPATH, json);
         }
     }
 }
