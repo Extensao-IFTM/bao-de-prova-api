@@ -1,4 +1,5 @@
 ﻿using BaoProvaAPI.Models;
+using BaoProvaAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
@@ -8,103 +9,84 @@ namespace BaoProvaAPI.Controllers
     [Route("api/[controller]")]
     public class UserDataController : ControllerBase
     {
-        private const string USERDATAFILEPATH = "Data/userdata.json";
-        private const string USERSFILEPATH = "Data/users.json";
+        private readonly IUserDataService _userDataService;
+
+        public UserDataController(IUserDataService userDataService)
+        {
+            _userDataService = userDataService;
+        }
 
         [HttpPost]
         public IActionResult SaveUserData([FromBody] UserData userData)
         {
-            List<UserData> userDataList = LoadUserData();
-
-            // Adiciona timestamp se não fornecido
-            if (userData.Timestamp == default)
+            if (!ModelState.IsValid)
             {
-                userData.Timestamp = DateTime.Now;
+                return BadRequest(ModelState);
             }
 
-            userDataList.Add(userData);
-            SaveUserDataToFile(userDataList);
-
-            return Ok(new { message = "Dados do usuário salvos com sucesso." });
+            try
+            {
+                _userDataService.SaveUserAnswer(userData);
+                return Ok(new { message = "Resposta salva com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Erro ao salvar resposta: {ex.Message}" });
+            }
         }
 
-        [HttpPost("user")]
-        public IActionResult CreateUser([FromBody] User user)
+        [HttpGet("user/{userId}/stats")]
+        public IActionResult GetUserStats(int userId)
         {
-            List<User> users = LoadUsers();
-
-            // Verifica se já existe um usuário com o mesmo email
-            if (users.Any(u => u.Email.Equals(user.Email, StringComparison.OrdinalIgnoreCase)))
+            try
             {
-                return BadRequest("Já existe um usuário com este email.");
+                var stats = _userDataService.GetUserStats(userId);
+
+                if (stats.TotalQuestions == 0)
+                {
+                    return NotFound(new { message = $"Nenhum dado encontrado para o usuário {userId}" });
+                }
+
+                return Ok(stats);
             }
-
-            // Define um novo ID
-            user.Id = users.Any() ? users.Max(u => u.Id) + 1 : 1;
-
-            users.Add(user);
-            SaveUsersToFile(users);
-
-            return Ok(new { message = "Usuário criado com sucesso.", userId = user.Id });
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Erro ao obter estatísticas: {ex.Message}" });
+            }
         }
 
-
-        private List<User> LoadUsers()
+        [HttpGet("user/{userId}/history")]
+        public IActionResult GetUserHistory(int userId)
         {
-            if (!System.IO.File.Exists(USERSFILEPATH))
-                return new List<User>();
+            try
+            {
+                var history = _userDataService.GetUserHistory(userId);
 
-            var json = System.IO.File.ReadAllText(USERSFILEPATH);
-            if (string.IsNullOrWhiteSpace(json))
-                return new List<User>();
+                if (!history.Any())
+                {
+                    return NotFound(new { message = $"Nenhum histórico encontrado para o usuário {userId}" });
+                }
 
-            return JsonSerializer.Deserialize<List<User>>(json) ?? new List<User>();
+                return Ok(history);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Erro ao obter histórico: {ex.Message}" });
+            }
         }
 
-        private List<UserData> LoadUserData()
+        [HttpGet("ranking")]
+        public IActionResult GetRanking()
         {
-            if (!System.IO.File.Exists(USERDATAFILEPATH))
+            try
             {
-                return new List<UserData>();
+                var ranking = _userDataService.GetRanking();
+                return Ok(ranking);
             }
-
-            string json = System.IO.File.ReadAllText(USERDATAFILEPATH);
-
-            if (string.IsNullOrWhiteSpace(json))
+            catch (Exception ex)
             {
-                return new List<UserData>();
+                return StatusCode(500, new { message = $"Erro ao obter ranking: {ex.Message}" });
             }
-
-            return JsonSerializer.Deserialize<List<UserData>>(json) ?? new List<UserData>();
-        }
-
-        private void SaveUserDataToFile(List<UserData> userDataList)
-        {
-            string json = JsonSerializer.Serialize(userDataList, new JsonSerializerOptions { WriteIndented = true });
-
-            // Cria o diretório se não existir
-            string? directory = Path.GetDirectoryName(USERDATAFILEPATH);
-            
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            System.IO.File.WriteAllText(USERDATAFILEPATH, json);
-        }
-
-        private void SaveUsersToFile(List<User> users)
-        {
-            string json = JsonSerializer.Serialize(users, new JsonSerializerOptions { WriteIndented = true });
-
-            // Cria o diretório se não existir
-            string? directory = Path.GetDirectoryName(USERSFILEPATH);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            System.IO.File.WriteAllText(USERSFILEPATH, json);
         }
     }
 }
