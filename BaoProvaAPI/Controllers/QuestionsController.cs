@@ -1,6 +1,7 @@
 ﻿using BaoProvaAPI.Models;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using BaoProvaAPI.Services.Interfaces;
 
 namespace BaoProvaAPI.Controllers
 {
@@ -8,7 +9,12 @@ namespace BaoProvaAPI.Controllers
     [Route("api/[controller]")]
     public class QuestionsController : ControllerBase
     {
-        private const string QUESTIONSFILEPATH = "Data/questions.json";
+        private readonly IQuestionService _questionService;
+
+        public QuestionsController(IQuestionService questionService)
+        {
+            _questionService = questionService;
+        }
 
         [HttpGet("api-life")]
         public IActionResult Verify()
@@ -21,25 +27,7 @@ namespace BaoProvaAPI.Controllers
         {
             try
             {
-                if (!System.IO.File.Exists(QUESTIONSFILEPATH))
-                {
-                    return NotFound("Arquivo de questões não encontrado");
-                }
-
-                string questionsJson = System.IO.File.ReadAllText(QUESTIONSFILEPATH);
-                List<Question>? questions = JsonSerializer.Deserialize<List<Question>>(questionsJson);
-
-                if (questions == null)
-                {
-                    return StatusCode(500, "Erro ao carregar questões");
-                }
-
-                // Filtrar por categoria se fornecida
-                if (!string.IsNullOrWhiteSpace(category))
-                {
-                    questions = questions.Where(q => q.Category?.Equals(category, StringComparison.OrdinalIgnoreCase) == true).ToList();
-                }
-
+                List<Question> questions = _questionService.GetAllQuestions(category);
                 return Ok(questions);
             }
             catch (Exception ex)
@@ -53,15 +41,7 @@ namespace BaoProvaAPI.Controllers
         {
             try
             {
-                if (!System.IO.File.Exists(QUESTIONSFILEPATH))
-                {
-                    return NotFound("Arquivo de questões não encontrado");
-                }
-
-                string questionsJson = System.IO.File.ReadAllText(QUESTIONSFILEPATH);
-                List<Question>? questions = JsonSerializer.Deserialize<List<Question>>(questionsJson);
-
-                Question? question = questions?.FirstOrDefault(q => q.Id == id);
+                var question = _questionService.GetQuestionById(id);
 
                 if (question == null)
                 {
@@ -81,34 +61,14 @@ namespace BaoProvaAPI.Controllers
         {
             try
             {
-                if (!System.IO.File.Exists(QUESTIONSFILEPATH))
-                {
-                    return NotFound("Arquivo de questões não encontrado");
-                }
+                var question = _questionService.GetRandomQuestion(category);
 
-                string questionsJson = System.IO.File.ReadAllText(QUESTIONSFILEPATH);
-                List<Question>? questions = JsonSerializer.Deserialize<List<Question>>(questionsJson);
-
-                if (questions == null || !questions.Any())
+                if (question == null)
                 {
                     return NotFound("Nenhuma questão disponível");
                 }
 
-                // Filtrar por categoria se fornecida
-                if (!string.IsNullOrWhiteSpace(category))
-                {
-                    questions = questions.Where(q => q.Category?.Equals(category, StringComparison.OrdinalIgnoreCase) == true).ToList();
-                }
-
-                if (!questions.Any())
-                {
-                    return NotFound($"Nenhuma questão encontrada para a categoria {category}");
-                }
-
-                Random random = new Random();
-                Question randomQuestion = questions[random.Next(questions.Count)];
-
-                return Ok(randomQuestion);
+                return Ok(question);
             }
             catch (Exception ex)
             {
