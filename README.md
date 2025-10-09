@@ -15,12 +15,15 @@ O **Bão de Prova** é uma API simples e eficiente que serve como backend para u
 - ✅ Estatísticas individuais (acertos, erros, acurácia)
 - ✅ Ranking geral entre usuários
 - ✅ Armazenamento em JSON (sem banco de dados)
+- ✅ CORS habilitado para integração com frontend
+- ✅ Arquitetura em camadas (Controllers, Services, Models)
 
 ## 🛠️ Tecnologias
 
 - .NET 9.0
 - ASP.NET Core Web API
 - C#
+- System.Text.Json para serialização
 - JSON para persistência de dados
 
 ## 📁 Estrutura do Projeto
@@ -75,14 +78,20 @@ dotnet run --project BaoProvaAPI
 ```
 
 4. A API estará disponível em:
-   - HTTP: `http://localhost:5000`
-   - HTTPS: `https://localhost:5001`
+   - HTTP: `http://localhost:5273`
+   - HTTPS: `https://localhost:7093`
 
 ## 📖 Documentação da API
 
 ### Base URL
+
+**Desenvolvimento:**
 ```
-http://localhost:5000/api
+https://localhost:7093/api
+```
+ou
+```
+http://localhost:5273/api
 ```
 
 ---
@@ -429,7 +438,7 @@ GET /api/userdata/ranking
 
 ### 1. Criar um usuário
 ```javascript
-const response = await fetch('http://localhost:5000/api/users', {
+const response = await fetch('https://localhost:7093/api/users', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -443,7 +452,7 @@ const userId = user.id; // Guarde este ID!
 
 ### 2. Buscar uma questão aleatória
 ```javascript
-const response = await fetch('http://localhost:5000/api/questions/random');
+const response = await fetch('https://localhost:7093/api/questions/random');
 const question = await response.json();
 ```
 
@@ -452,7 +461,7 @@ const question = await response.json();
 const selectedAlternative = 1; // Alternativa escolhida pelo usuário
 const isCorrect = selectedAlternative === question.correctAlternative;
 
-await fetch('http://localhost:5000/api/userdata', {
+await fetch('https://localhost:7093/api/userdata', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -466,7 +475,7 @@ await fetch('http://localhost:5000/api/userdata', {
 
 ### 4. Ver estatísticas do usuário
 ```javascript
-const response = await fetch(`http://localhost:5000/api/userdata/user/${userId}/stats`);
+const response = await fetch(`https://localhost:7093/api/userdata/user/${userId}/stats`);
 const stats = await response.json();
 console.log(`Acurácia: ${stats.accuracy}%`);
 console.log(`Pontuação: ${stats.score} pontos`);
@@ -474,7 +483,7 @@ console.log(`Pontuação: ${stats.score} pontos`);
 
 ### 5. Ver ranking
 ```javascript
-const response = await fetch('http://localhost:5000/api/userdata/ranking');
+const response = await fetch('https://localhost:7093/api/userdata/ranking');
 const ranking = await response.json();
 ranking.forEach((entry, index) => {
   console.log(`${index + 1}º - ${entry.userName}: ${entry.score} pontos`);
@@ -521,13 +530,100 @@ ranking.forEach((entry, index) => {
 
 ---
 
-<!-- ## 🔒 CORS
+## 🔒 CORS
 
-A API possui CORS habilitado para todas as origens em modo de desenvolvimento. Para produção, configure as origens permitidas no arquivo `Program.cs`.
+A API possui **CORS habilitado** para permitir requisições de qualquer origem (`AllowAnyOrigin`). 
 
---- -->
+**⚠️ Importante para Produção:** 
+Em produção, é recomendado restringir as origens permitidas no arquivo `Program.cs`:
 
-## 🤝 Contribuindo
+```csharp
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigins", policy =>
+    {
+        policy.WithOrigins("https://seu-site.com", "https://www.seu-site.com")
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+```
+
+### 🌐 Testando com Frontend Local
+
+Se você está testando com arquivos HTML locais, use uma dessas opções:
+
+**Opção 1: Live Server (Recomendado)**
+- Instale a extensão **Live Server** no VS Code
+- Clique direito no arquivo HTML → "Open with Live Server"
+- Acessa em: `http://localhost:5500`
+
+**Opção 2: Python HTTP Server**
+```bash
+python -m http.server 8000
+```
+
+**Opção 3: Node.js http-server**
+```bash
+npm install -g http-server
+http-server -p 8000
+```
+
+> **Nota:** Abrir HTML direto pelo arquivo (`file:///`) pode causar problemas de CORS mesmo com a configuração correta.
+
+---
+
+## � Testando a API
+
+### Usando Postman ou Insomnia
+
+1. **Importar Collection** (opcional)
+2. **Base URL**: `https://localhost:7093/api`
+3. **Testar endpoint de health check**:
+   ```
+   GET https://localhost:7093/api/questions/api-life
+   ```
+
+### Usando cURL
+
+```bash
+# Verificar status da API
+curl https://localhost:7093/api/questions/api-life
+
+# Criar usuário
+curl -X POST https://localhost:7093/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"João Silva","email":"joao@email.com"}'
+
+# Buscar questão aleatória
+curl https://localhost:7093/api/questions/random
+```
+
+### Usando Browser (GET requests)
+
+Acesse diretamente no navegador:
+```
+https://localhost:7093/api/questions
+https://localhost:7093/api/questions/random
+https://localhost:7093/api/userdata/ranking
+```
+
+---
+
+## 📚 Documentação Adicional
+
+Para integrar esta API em seu frontend HTML/CSS/JavaScript, consulte o [**Guia de Integração Completo**](INTEGRATION_GUIDE.md).
+
+O guia contém:
+- ✅ Exemplos completos de código JavaScript
+- ✅ Páginas HTML prontas para uso
+- ✅ Tratamento de erros
+- ✅ Boas práticas
+- ✅ Sistema de cache e loading states
+
+---
+
+## �🤝 Contribuindo
 
 Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou enviar pull requests.
 
