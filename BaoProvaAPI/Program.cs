@@ -7,6 +7,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+// Configurar CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 // Registrar Services
 builder.Services.AddScoped<IQuestionService, QuestionService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -20,6 +31,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
