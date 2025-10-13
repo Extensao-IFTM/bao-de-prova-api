@@ -11,7 +11,7 @@ namespace BaoProvaAPI.Models
         public int QuestionId { get; set; }
 
         [Required(ErrorMessage = "SelectedAlternative é obrigatório")]
-        [Range(0, 4, ErrorMessage = "SelectedAlternative deve estar entre 0 e 4")]
+        [Range(0, 5, ErrorMessage = "SelectedAlternative deve estar entre 0 e 5")]
         public int SelectedAlternative { get; set; }
 
         public bool IsCorrect { get; set; }
